@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avance de obra</title>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F3EC;
+    --surface:#FFFFFF;
+    --surface-2:#FCFAF6;
+    --ink:#262420;
+    --ink-muted:#8C857A;
+    --line:#E6DFD3;
+    --teal:#1F7A6C;
+    --teal-bg:#D7F0EA;
+    --coral:#B6492F;
+    --coral-bg:#F8DED4;
+    --amber:#9C6B12;
+    --amber-bg:#F6E6C7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; -webkit-tap-highlight-color:transparent;
+  }
+  .shell{
+    max-width:580px; margin:0 auto; min-height:100vh; background:var(--bg);
+    position:relative; padding-bottom:100px; box-shadow:0 0 60px rgba(0,0,0,.07);
+  }
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    border-bottom:1px solid var(--line); padding:18px 18px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .brand-title{
+    font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:25px;
+    text-transform:uppercase; letter-spacing:.5px; margin:0;
+  }
+  .brand-sub{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-muted);
+    letter-spacing:.4px; margin-top:3px;
+  }
+  .obra-pill{
+    background:var(--surface); border:1.5px solid var(--line); border-radius:999px;
+    padding:11px 16px 11px 18px; display:flex; align-items:center; gap:8px;
+    font-weight:700; font-size:16px; max-width:220px; cursor:pointer; flex-shrink:0;
+    min-height:48px;
+  }
+  .obra-pill .name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .obra-pill svg{flex-shrink:0; opacity:.6; width:13px; height:13px;}
+  /* ---------- generic ---------- */
+  .section-title{
+    font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:.6px;
+    font-size:16px; color:var(--ink-muted); font-weight:700; margin:22px 18px 10px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .card-list{padding:0 18px; display:flex; flex-direction:column; gap:13px;}
+  .empty-state{text-align:center; padding:64px 28px 20px; color:var(--ink-muted);}
+  .empty-state h3{
+    font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; color:var(--ink);
+    font-size:20px; margin:0 0 8px; letter-spacing:.3px;
+  }
+  .empty-state p{font-size:15px; margin:0 0 18px; line-height:1.5;}
+  .btn-add{
+    width:100%; border:1.5px dashed var(--line); background:transparent; border-radius:14px;
+    padding:16px; font-weight:700; color:var(--ink-muted); font-size:16px; margin-top:6px;
+    cursor:pointer; font-family:'Inter',sans-serif; min-height:54px;
+  }
+  .btn-add:active{background:var(--surface-2);}
+  .btn-primary{
+    background:var(--ink); color:#fff; border:none; border-radius:12px; padding:15px;
+    font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; font-size:16px; min-height:52px;
+  }
+  .btn-secondary{
+    background:transparent; border:1.5px solid var(--line); border-radius:12px; padding:15px;
+    font-weight:600; cursor:pointer; color:var(--ink-muted); font-family:'Inter',sans-serif; font-size:16px; min-height:52px;
+  }
+  .btn-danger-text{color:var(--coral); background:none; border:none; font-size:14px; font-weight:600; cursor:pointer; padding:8px;}
+  /* ---------- risk banner ---------- */
+  .risk-banner{
+    background:var(--coral-bg); color:var(--coral); border-radius:14px; padding:14px 16px 14px 19px;
+    margin:18px 18px 0; font-size:15px; font-weight:700; display:flex; align-items:center;
+    gap:10px; cursor:pointer; position:relative; overflow:hidden;
+  }
+  .risk-banner::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:6px;
+    background:repeating-linear-gradient(135deg, var(--coral) 0 6px, var(--coral-bg) 6px 12px);
+  }
+  .pause-banner{
+    background:var(--surface-2); color:var(--ink-muted); border:1.5px dashed var(--line); border-radius:14px;
+    padding:13px 16px; margin:18px 18px 0; font-size:14.5px; font-weight:600; cursor:pointer;
+  }
+  /* ---------- tarea card ---------- */
+  .tarea-card{
+    background:var(--surface); border:1.5px solid var(--line); border-radius:16px;
+    padding:17px 18px; position:relative;
+  }
+  .tarea-card.riesgo{border-color:var(--coral);}
+  .tarea-card.aviso{border-color:var(--amber);}
+  .tarea-card.riesgo::before, .tarea-card.aviso::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:6px; border-radius:16px 0 0 16px;
+  }
+  .tarea-card.riesgo::before{background:repeating-linear-gradient(135deg, var(--coral) 0 6px, var(--coral-bg) 6px 12px);}
+  .tarea-card.aviso::before{background:repeating-linear-gradient(135deg, var(--amber) 0 6px, var(--amber-bg) 6px 12px);}
+  .tarea-card.pausada{border-style:dashed; border-color:var(--ink-muted); background:var(--surface-2);}
+  .tarea-head{display:flex; justify-content:space-between; gap:10px; align-items:flex-start;}
+  .tarea-nombre{font-weight:700; font-size:18px; line-height:1.3;}
+  .tarea-badges{display:flex; gap:7px; flex-shrink:0;}
+  .badge{
+    font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.3px; padding:4px 9px; border-radius:7px; white-space:nowrap;
+  }
+  .badge.riesgo{background:var(--coral); color:#fff;}
+  .badge.aviso{background:var(--amber); color:#fff;}
+  .tarea-meta{
+    display:flex; gap:14px; margin-top:11px; font-family:'IBM Plex Mono',monospace;
+    font-size:13px; color:var(--ink-muted); flex-wrap:wrap;
+  }
+  .tarea-foot{display:flex; align-items:center; justify-content:space-between; margin-top:13px; gap:10px; flex-wrap:wrap;}
+  select.estado-select{
+    border-radius:10px; border:1.5px solid var(--line); background:var(--surface-2); font-family:'Inter',sans-serif;
+    font-size:14px; font-weight:600; padding:10px 12px; color:var(--ink); min-height:44px;
+  }
+  .btn-pause{
+    background:transparent; border:1.5px solid var(--line); border-radius:10px; padding:10px 14px;
+    font-size:13px; font-weight:600; color:var(--ink-muted); cursor:pointer; font-family:'Inter',sans-serif; flex-shrink:0;
+    min-height:44px;
+  }
+  .material-tag{
+    display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:10px;
+    font-size:13px; font-weight:600; font-family:'IBM Plex Mono',monospace; max-width:100%;
+  }
+  .material-tag .dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+  .mt-pedido{background:var(--surface-2); color:var(--ink-muted); border:1px solid var(--line);}
+  .mt-pedido .dot{background:var(--ink-muted);}
+  .mt-camino{background:var(--amber-bg); color:var(--amber);}
+  .mt-camino .dot{background:var(--amber);}
+  .mt-ok{background:var(--teal-bg); color:var(--teal);}
+  .mt-ok .dot{background:var(--teal);}
+  .remove-x{position:absolute; top:12px; right:12px; background:none; border:none; color:var(--ink-muted); opacity:.55; cursor:pointer; font-size:19px; padding:6px 8px; min-width:38px; min-height:38px;}
+  /* ---------- material card ---------- */
+  .material-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:17px 18px; position:relative;}
+  .material-nombre{font-weight:700; font-size:18px;}
+  .material-sub{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-muted); margin-top:4px;}
+  .material-link{font-size:14px; color:var(--ink-muted); margin-top:8px;}
+  .material-link b{color:var(--ink); font-weight:600;}
+  .stepper{display:flex; align-items:center; margin:18px 0 6px;}
+  .step{width:17px; height:17px; border-radius:4px; border:2.5px solid var(--line); background:var(--surface); flex-shrink:0;}
+  .step.done{background:var(--teal); border-color:var(--teal);}
+  .step.current{border-color:var(--amber); box-shadow:0 0 0 4px var(--amber-bg);}
+  .step-line{flex:1; height:3px; background:var(--line); margin:0 3px;}
+  .step-line.done{background:var(--teal);}
+  .step-labels{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.3px; margin-top:5px;}
+  .btn-advance{
+    margin-top:16px; background:var(--ink); color:var(--bg); border:none; border-radius:12px;
+    padding:13px 16px; font-weight:700; font-size:15px; cursor:pointer; width:100%; font-family:'Inter',sans-serif;
+    min-height:50px;
+  }
+  .done-pill{
+    margin-top:16px; background:var(--teal-bg); color:var(--teal); border-radius:12px; padding:13px 16px;
+    text-align:center; font-weight:700; font-size:15px;
+  }
+  .undo-link{display:block; text-align:center; font-size:13px; color:var(--ink-muted); margin-top:10px; cursor:pointer; text-decoration:underline; padding:6px;}
+  /* ---------- resumen ---------- */
+  .stat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:13px; padding:0 18px; margin-top:14px;}
+  .stat-box{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:18px; text-align:center;}
+  .stat-num{font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:36px; line-height:1;}
+  .stat-label{font-size:13px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.4px; margin-top:6px;}
+  .riesgo-detalle{font-size:14.5px; color:var(--ink-muted); margin-top:8px; line-height:1.5;}
+  .btn-cerrar-semana{
+    margin:30px 18px 8px; background:var(--teal); color:#fff; border:none; border-radius:16px;
+    padding:20px; font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:.5px;
+    font-weight:800; font-size:17px; width:calc(100% - 36px); cursor:pointer; position:relative; overflow:hidden;
+    min-height:60px;
+  }
+  .btn-cerrar-semana::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:5px;
+    background:repeating-linear-gradient(135deg, #fff 0 7px, transparent 7px 14px); opacity:.5;
+  }
+  .cerrar-hint{font-size:13.5px; color:var(--ink-muted); text-align:center; margin:0 26px 10px; line-height:1.5;}
+  /* ---------- bottom nav ---------- */
+  .bottomnav{
+    position:fixed; left:0; right:0; bottom:0; max-width:580px; margin:0 auto; background:var(--surface);
+    border-top:1px solid var(--line); display:flex; z-index:30; padding-bottom:env(safe-area-inset-bottom);
+  }
+  .nav-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:14px 0 12px;
+    background:none; border:none; color:var(--ink-muted); cursor:pointer; position:relative; font-family:'Inter',sans-serif;
+    min-height:64px;
+  }
+  .nav-btn .nav-label{
+    font-family:'Barlow Condensed',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:.4px; font-weight:700;
+  }
+  .nav-btn.active{color:var(--teal);}
+  .nav-btn.active::after{content:''; position:absolute; top:0; left:32%; right:32%; height:4px; background:var(--teal); border-radius:0 0 4px 4px;}
+  .nav-dot{
+    position:absolute; top:6px; right:26%; background:var(--coral); color:#fff; font-size:11px; font-weight:800;
+    border-radius:50%; min-width:19px; height:19px; display:flex; align-items:center; justify-content:center; padding:0 4px;
+  }
+  /* ---------- sheet / overlay ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,18,15,.45); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50;
+  }
+  .overlay.hidden{display:none;}
+  .sheet{
+    background:var(--bg); width:100%; max-width:580px; border-radius:22px 22px 0 0;
+    padding:24px 20px calc(22px + env(safe-area-inset-bottom)); max-height:88vh; overflow-y:auto;
+    animation:slideUp .22s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(100%);} to{transform:translateY(0);}}
+  .sheet h3{font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:21px; margin:0 0 6px; letter-spacing:.3px;}
+  .sheet .sheet-desc{font-size:14.5px; color:var(--ink-muted); margin:0 0 19px; line-height:1.5;}
+  .field{margin-bottom:16px;}
+  .field label{font-size:14px; font-weight:600; color:var(--ink-muted); margin-bottom:7px; display:block;}
+  .field input, .field select, .field textarea{
+    width:100%; border:1.5px solid var(--line); border-radius:12px; padding:13px 14px;
+    font-family:'Inter',sans-serif; font-size:16px; background:var(--surface); color:var(--ink);
+    min-height:50px;
+  }
+  .field-row{display:flex; gap:12px;}
+  .field-row .field{flex:1;}
+  .sheet-actions{display:flex; gap:12px; margin-top:8px;}
+  .sheet-actions > *{flex:1;}
+  .obra-list-item{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 6px;
+    border-bottom:1px solid var(--line); font-weight:600; font-size:17px; cursor:pointer;
+    min-height:56px;
+  }
+  .obra-list-item:last-child{border-bottom:none;}
+  .obra-list-item.activa{color:var(--teal);}
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed; bottom:110px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg);
+    padding:13px 22px; border-radius:999px; font-size:15px; font-weight:600; z-index:60; max-width:85%;
+    text-align:center; box-shadow:0 6px 20px rgba(0,0,0,.25);
+  }
+  .toast.hidden{display:none;}
+  .storage-warning{
+    background:var(--amber-bg); color:var(--amber); font-size:13.5px; padding:12px 18px; margin:0; text-align:center; font-weight:600;
+  }
+  /* ---------- login ---------- */
+  .login-screen{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; padding:32px 24px; text-align:center;
+  }
+  .login-screen h2{
+    font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px;
+  }
+  .login-screen p{font-size:15px; color:var(--ink-muted); margin:0 0 28px; line-height:1.5;}
+  .login-form{width:100%; max-width:340px; display:flex; flex-direction:column; gap:14px;}
+  .login-form input{
+    border:1.5px solid var(--line); border-radius:12px; padding:14px 16px;
+    font-family:'Inter',sans-serif; font-size:16px; background:var(--surface); color:var(--ink); width:100%;
+  }
+  .login-form .btn-primary{width:100%;}
+  .login-tabs{display:flex; gap:0; margin-bottom:8px; border:1.5px solid var(--line); border-radius:12px; overflow:hidden;}
+  .login-tab{
+    flex:1; padding:12px; background:transparent; border:none; font-family:'Inter',sans-serif;
+    font-weight:600; font-size:15px; cursor:pointer; color:var(--ink-muted);
+  }
+  .login-tab.active{background:var(--ink); color:#fff;}
+  .login-hint{font-size:13px; color:var(--ink-muted); text-align:center; margin-top:4px; line-height:1.5;}
+  /* ---------- rol banner ---------- */
+  .rol-badge{
+    background:var(--teal-bg); color:var(--teal); font-size:12px; font-weight:700;
+    padding:4px 10px; border-radius:999px; font-family:'IBM Plex Mono',monospace;
+    text-transform:uppercase; letter-spacing:.3px;
+  }
+  .rol-badge.encargado{background:var(--amber-bg); color:var(--amber);}
+  /* ---------- unirse a obra ---------- */
+  .join-hint{font-size:13.5px; color:var(--ink-muted); text-align:center; margin-top:8px; line-height:1.5;}
+</style>
+</head>
+<body>
+
+<!-- Pantalla de login (oculta cuando hay sesión) -->
+<div id="login-screen" class="login-screen" style="display:none;">
+  <p class="brand-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;margin:0 0 6px;">Avance</p>
+  <p style="font-size:14px;color:var(--ink-muted);margin:0 0 28px;">control semanal de obra</p>
+  <div class="login-form">
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" onclick="switchLoginTab('login')">Entrar</button>
+      <button class="login-tab" id="tab-register" onclick="switchLoginTab('register')">Crear cuenta</button>
+    </div>
+    <input type="email" id="login-email" placeholder="tu@email.com" autocomplete="email">
+    <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <p class="login-hint" id="login-msg"></p>
+  </div>
+</div>
+
+<div class="shell" id="main-shell" style="display:none;">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div>
+        <p class="brand-title">Avance</p>
+        <p class="brand-sub">control semanal de obra</p>
+      </div>
+      <span class="rol-badge" id="rol-badge" style="display:none;"></span>
+    </div>
+    <div class="obra-pill" data-action="abrir-obras">
+      <span class="name" id="obra-pill-name">Cargando…</span>
+      <svg width="13" height="13" viewBox="0 0 10 10"><path d="M1 3L5 7L9 3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <div id="storage-warning"></div>
+  <div id="app"></div>
+  <div class="bottomnav" id="bottomnav"></div>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN SUPABASE
+   Reemplaza los dos valores de abajo con los de tu proyecto
+   ========================================================= */
+
+const SUPABASE_URL  = 'https://fobgnzsdrjpsmsynxlct.supabase.co/rest/v1/';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYmduenNkcmpwc21zeW54bGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTY5OTMsImV4cCI6MjA5NzQzMjk5M30.9bcR_58UOijBI_jqP-LQ1NWcDLHTizJh-3qEJ8oGt-E';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* =========================================================
+   LOGIN / SESIÓN
+   ========================================================= */
+let currentUser = null;
+let currentRol  = null; // 'jefe' | 'encargado'
+
+function switchLoginTab(tab){
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('login-password').autocomplete = tab==='register' ? 'new-password' : 'current-password';
+  document.getElementById('login-msg').textContent = '';
+  switchLoginTab._mode = tab;
+}
+switchLoginTab._mode = 'login';
+
+async function doLogin(){
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const mode     = switchLoginTab._mode;
+  const msg      = document.getElementById('login-msg');
+  msg.textContent = mode==='login' ? 'Entrando…' : 'Creando cuenta…';
+
+  let res;
+  if(mode === 'register'){
+    res = await sb.auth.signUp({ email, password });
+  } else {
+    res = await sb.auth.signInWithPassword({ email, password });
+  }
+
+  if(res.error){
+    msg.style.color = 'var(--coral)';
+    msg.textContent = res.error.message;
+  } else if(mode === 'register'){
+    msg.style.color = 'var(--teal)';
+    msg.textContent = 'Cuenta creada. Revisa tu email para confirmarla, luego entra.';
+  }
+  // onAuthStateChange se dispara automáticamente si el login fue correcto
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+}
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  if(session?.user){
+    currentUser = session.user;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-shell').style.display   = 'block';
+    await init();
+  } else {
+    currentUser = null;
+    currentRol  = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-shell').style.display   = 'none';
+  }
+});
+
+/* =========================================================
+   ESTADO Y PERSISTENCIA (Supabase)
+   ========================================================= */
+const ESTADOS_TAREA = ['pendiente','en_curso','hecho','desviado'];
+const LABEL_TAREA = {pendiente:'Pendiente', en_curso:'En curso', hecho:'Hecho', desviado:'Desviado'};
+const ESTADOS_MATERIAL = ['pedido','en_camino','llegado','instalado'];
+const LABEL_MATERIAL = {pedido:'Pedido', en_camino:'En camino', llegado:'Llegado', instalado:'Instalado'};
+
+let state = {
+  obras: [],
+  obraActualId: null,
+  obraData: { tareas: [], materiales: [], historico: [] },
+  tab: 'plan',
+  cargando: true
+};
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function diffDias(fechaA, fechaB){ return Math.round((new Date(fechaA) - new Date(fechaB)) / 86400000); }
+function fmtFecha(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m; }
+
+/* ---- Supabase helpers ---- */
+async function dbCargarObras(){
+  // Trae las obras de las que el usuario es miembro, con su rol
+  const { data, error } = await sb
+    .from('obras')
+    .select('id, nombre, obra_miembros(rol)')
+    .order('created_at');
+  if(error){ console.error(error); return []; }
+  return data.map(o => ({
+    id: o.id,
+    nombre: o.nombre,
+    rol: o.obra_miembros?.[0]?.rol || 'encargado'
+  }));
+}
+
+async function dbCargarObraData(obraId){
+  const { data, error } = await sb
+    .from('obra_data')
+    .select('tareas, materiales, historico')
+    .eq('obra_id', obraId)
+    .single();
+  if(error){ console.error(error); return { tareas:[], materiales:[], historico:[] }; }
+  return {
+    tareas:     data.tareas     || [],
+    materiales: data.materiales || [],
+    historico:  data.historico  || []
+  };
+}
+
+async function dbGuardarObraData(){
+  const { error } = await sb
+    .from('obra_data')
+    .update({
+      tareas:     state.obraData.tareas,
+      materiales: state.obraData.materiales,
+      historico:  state.obraData.historico
+    })
+    .eq('obra_id', state.obraActualId);
+  if(error){
+    console.error(error);
+    mostrarToast('Error al guardar. Revisa la conexión.');
+  }
+}
+
+async function init(){
+  state.cargando = true;
+  renderAll();
+
+  state.obras = await dbCargarObras();
+  // Detectar rol dominante (si es jefe en alguna obra, es jefe)
+  currentRol = state.obras.some(o=>o.rol==='jefe') ? 'jefe' : 'encargado';
+  const badge = document.getElementById('rol-badge');
+  badge.textContent = currentRol === 'jefe' ? 'Jefe de obra' : 'Encargado';
+  badge.className = 'rol-badge' + (currentRol==='encargado' ? ' encargado' : '');
+  badge.style.display = 'inline-block';
+
+  const lastId = localStorage.getItem('ultima-obra-' + currentUser.id);
+  if(lastId && state.obras.find(o=>o.id===lastId)){
+    state.obraActualId = lastId;
+  } else if(state.obras.length){
+    state.obraActualId = state.obras[0].id;
+  }
+
+  if(state.obraActualId){ await cargarObraData(state.obraActualId); }
+  state.cargando = false;
+  renderAll();
+}
+
+async function cargarObraData(id){
+  state.obraData = await dbCargarObraData(id);
+}
+
+async function guardarObraData(){
+  await dbGuardarObraData();
+}
+
+/* =========================================================
+   ACCIONES — OBRAS
+   ========================================================= */
+async function crearObra(nombre){
+  // Llama a la función RPC que crea obra + obra_data + miembro en una sola transacción
+  const { data, error } = await sb.rpc('crear_obra', {
+    p_nombre: nombre.trim(),
+    p_rol: 'jefe'   // quien crea una obra es siempre jefe
+  });
+  if(error){ mostrarToast('Error al crear la obra'); console.error(error); return; }
+  state.obras = await dbCargarObras();
+  state.obraActualId = data;
+  localStorage.setItem('ultima-obra-' + currentUser.id, data);
+  await cargarObraData(data);
+  cerrarSheet();
+  renderAll();
+  mostrarToast('Obra creada');
+}
+
+async function seleccionarObra(id){
+  state.obraActualId = id;
+  localStorage.setItem('ultima-obra-' + currentUser.id, id);
+  await cargarObraData(id);
+  cerrarSheet();
+  renderAll();
+}
+
+async function eliminarObra(id){
+  // Solo jefes pueden borrar (RLS lo controla también en servidor)
+  const obraObj = state.obras.find(o=>o.id===id);
+  if(obraObj?.rol !== 'jefe'){ mostrarToast('Solo el jefe puede eliminar una obra'); return; }
+  const { error } = await sb.from('obras').delete().eq('id', id);
+  if(error){ mostrarToast('Error al eliminar'); return; }
+  state.obras = state.obras.filter(o=>o.id!==id);
+  if(state.obraActualId === id){
+    state.obraActualId = state.obras.length ? state.obras[0].id : null;
+    if(state.obraActualId){ await cargarObraData(state.obraActualId); }
+    else { state.obraData = { tareas: [], materiales: [], historico: [] }; }
+  }
+  abrirObras();
+}
+
+async function unirseAObra(obraId){
+  const { error } = await sb.rpc('unirse_a_obra', { p_obra_id: obraId.trim() });
+  if(error){ mostrarToast('Código de obra no válido'); return; }
+  state.obras = await dbCargarObras();
+  await seleccionarObra(obraId.trim());
+  mostrarToast('Te has unido a la obra');
+}
+
+/* =========================================================
+   ACCIONES — TAREAS
+   ========================================================= */
+async function crearTarea(datos){
+  state.obraData.tareas.push({
+    id: uid(), nombre: datos.nombre, semana: datos.semana, personas: Number(datos.personas)||0,
+    fechaInicio: datos.fechaInicio || '', estado: 'pendiente', materialId: datos.materialId || null
+  });
+  await guardarObraData();
+  cerrarSheet();
+  renderAll();
+  mostrarToast('Tarea añadida');
+}
+async function actualizarEstadoTarea(id, estado){
+  const t = state.obraData.tareas.find(t=>t.id===id);
+  if(t){ t.estado = estado; await guardarObraData(); renderAll(); }
+}
+async function eliminarTarea(id){
+  state.obraData.tareas = state.obraData.tareas.filter(t=>t.id!==id);
+  await guardarObraData();
+  renderAll();
+}
+async function pausarTarea(id, motivo){
+  const t = state.obraData.tareas.find(t=>t.id===id);
+  if(!t) return;
+  t.semana = 'pausada';
+  t.motivoPausa = motivo || '';
+  t.fechaPausa = todayISO();
+  await guardarObraData();
+  cerrarSheet();
+  renderAll();
+  mostrarToast('Tarea pausada');
+}
+async function reanudarTarea(id, semana){
+  const t = state.obraData.tareas.find(t=>t.id===id);
+  if(!t) return;
+  t.semana = semana;
+  t.motivoPausa = '';
+  t.fechaPausa = '';
+  await guardarObraData();
+  cerrarSheet();
+  renderAll();
+  mostrarToast('Tarea reanudada');
+}
+
+/* =========================================================
+   ACCIONES — MATERIALES
+   ========================================================= */
+async function crearMaterial(datos){
+  state.obraData.materiales.push({
+    id: uid(), nombre: datos.nombre, cantidad: datos.cantidad, unidad: datos.unidad,
+    proveedor: datos.proveedor, fechaPedido: datos.fechaPedido, fechaPrevista: datos.fechaPrevista,
+    estado: 'pedido', tareaId: datos.tareaId || null, registradoPor: datos.registradoPor || '',
+    actualizado: todayISO()
+  });
+  await guardarObraData();
+  cerrarSheet();
+  renderAll();
+  mostrarToast('Pedido registrado');
+}
+async function avanzarMaterial(id){
+  const m = state.obraData.materiales.find(m=>m.id===id);
+  if(!m) return;
+  const idx = ESTADOS_MATERIAL.indexOf(m.estado);
+  if(idx < ESTADOS_MATERIAL.length-1){
+    m.estado = ESTADOS_MATERIAL[idx+1];
+    m.actualizado = todayISO();
+    await guardarObraData();
+    renderAll();
+    mostrarToast('Marcado como "' + LABEL_MATERIAL[m.estado] + '"');
+  }
+}
+async function retrocederMaterial(id){
+  const m = state.obraData.materiales.find(m=>m.id===id);
+  if(!m) return;
+  const idx = ESTADOS_MATERIAL.indexOf(m.estado);
+  if(idx > 0){
+    m.estado = ESTADOS_MATERIAL[idx-1];
+    m.actualizado = todayISO();
+    await guardarObraData();
+    renderAll();
+  }
+}
+async function eliminarMaterial(id){
+  state.obraData.materiales = state.obraData.materiales.filter(m=>m.id!==id);
+  state.obraData.tareas.forEach(t=>{ if(t.materialId===id) t.materialId=null; });
+  await guardarObraData();
+  renderAll();
+}
+
+/* =========================================================
+   CIERRE DE SEMANA
+   ========================================================= */
+async function cerrarSemana(){
+  const data = state.obraData;
+  const pausadas = data.tareas.filter(t=>t.semana==='pausada');
+  data.historico.push({ cerrada: todayISO(), tareas: data.tareas.filter(t=>t.semana==='S') });
+  const nuevasS = data.tareas.filter(t=>t.semana==='S+1').map(t=>({...t, semana:'S'}));
+  data.tareas = [...nuevasS, ...pausadas];
+  await guardarObraData();
+  cerrarSheet();
+  renderAll();
+  mostrarToast('Semana cerrada. La próxima semana pasa a ser la semana en curso.');
+}
+
+/* =========================================================
+   RIESGO
+   ========================================================= */
+function estadoRiesgoTarea(tarea, materiales){
+  if(tarea.semana === 'pausada') return null;
+  if(tarea.estado === 'hecho') return null;
+  if(!tarea.materialId) return null;
+  const mat = materiales.find(m=>m.id===tarea.materialId);
+  if(!mat) return null;
+  if(mat.estado === 'llegado' || mat.estado === 'instalado') return null;
+  if(!tarea.fechaInicio) return null;
+  const hoy = todayISO();
+  if(tarea.fechaInicio <= hoy) return 'riesgo';
+  const dias = diffDias(tarea.fechaInicio, hoy);
+  if(dias > 0 && dias <= 3 && mat.estado === 'pedido') return 'aviso';
+  return null;
+}
+function calcularRiesgos(){
+  const { tareas, materiales } = state.obraData;
+  const riesgos = [], avisos = [];
+  tareas.forEach(t=>{
+    const r = estadoRiesgoTarea(t, materiales);
+    if(r==='riesgo') riesgos.push(t);
+    else if(r==='aviso') avisos.push(t);
+  });
+  return { riesgos, avisos };
+}
+
+/* =========================================================
+   UI — TOAST Y SHEET
+   ========================================================= */
+let toastTimer;
+function mostrarToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.classList.add('hidden'), 2400);
+}
+function abrirSheet(html){
+  document.getElementById('sheet').innerHTML = html;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+function cerrarSheet(){
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+/* ---------- sheet: obras ---------- */
+function abrirObras(){
+  const esJefe = currentRol === 'jefe';
+  const lista = state.obras.map(o => `
+    <div class="obra-list-item ${o.id===state.obraActualId?'activa':''}" data-action="seleccionar-obra" data-id="${o.id}">
+      <span>${escapeHtml(o.nombre)}</span>
+      ${o.rol==='jefe' ? `<button class="btn-danger-text" data-action="eliminar-obra" data-id="${o.id}" onclick="event.stopPropagation()">eliminar</button>` : ''}
+    </div>`).join('') || '<p style="color:var(--ink-muted);font-size:13px;">Aún no hay obras.</p>';
+
+  const crearSection = esJefe ? `
+    <div class="field" style="margin-top:16px;">
+      <label>Nueva obra (solo jefe)</label>
+      <input type="text" id="input-nueva-obra" placeholder="Nombre de la obra">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
+      <button class="btn-primary" data-action="guardar-nueva-obra">Crear obra</button>
+    </div>` : `
+    <div class="field" style="margin-top:16px;">
+      <label>Unirme a una obra (código que te da el jefe)</label>
+      <input type="text" id="input-join-obra" placeholder="obra_xxxxxxxx">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
+      <button class="btn-primary" data-action="unirse-obra">Unirme</button>
+    </div>
+    <p class="join-hint">El jefe de obra te comparte el ID de la obra (ej. <code>obra_ab12cd34</code>) y entras directo.</p>`;
+
+  abrirSheet(`
+    <h3>Tus obras</h3>
+    <p class="sheet-desc">Cambia de obra${esJefe ? ' o crea una nueva' : ''}. Sesión: <b>${escapeHtml(currentUser?.email||'')}</b> · <span style="cursor:pointer;text-decoration:underline;color:var(--ink-muted);" data-action="logout">Cerrar sesión</span></p>
+    ${lista}
+    ${crearSection}
+  `);
+}
+
+/* ---------- sheet: nueva tarea ---------- */
+function abrirNuevaTarea(semana){
+  const mats = state.obraData.materiales.map(m=>`<option value="${m.id}">${escapeHtml(m.nombre)}</option>`).join('');
+  abrirSheet(`
+    <h3>${semana==='S' ? 'Nueva tarea · Semana en curso' : 'Nueva tarea · Próxima semana'}</h3>
+    <div class="field"><label>Nombre de la tarea / partida</label>
+      <input type="text" id="f-nombre" placeholder="Ej. Solera planta baja"></div>
+    <div class="field-row">
+      <div class="field"><label>Personas asignadas</label><input type="number" id="f-personas" min="0" placeholder="0"></div>
+      <div class="field"><label>Fecha de inicio prevista</label><input type="date" id="f-fecha"></div>
+    </div>
+    <div class="field"><label>Material crítico vinculado (opcional)</label>
+      <select id="f-material"><option value="">Ninguno</option>${mats}</select></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
+      <button class="btn-primary" data-action="guardar-tarea" data-semana="${semana}">Añadir tarea</button>
+    </div>
+  `);
+}
+
+/* ---------- sheet: nuevo material ---------- */
+function abrirNuevoMaterial(){
+  const tareas = state.obraData.tareas.map(t=>`<option value="${t.id}">${escapeHtml(t.nombre)} (${t.semana})</option>`).join('');
+  abrirSheet(`
+    <h3>Registrar pedido de material</h3>
+    <div class="field"><label>Material</label><input type="text" id="f-mnombre" placeholder="Ej. Cemento gris"></div>
+    <div class="field-row">
+      <div class="field"><label>Cantidad</label><input type="number" id="f-cantidad" placeholder="0"></div>
+      <div class="field"><label>Unidad</label><input type="text" id="f-unidad" placeholder="ud, kg, m³…"></div>
+    </div>
+    <div class="field"><label>Proveedor</label><input type="text" id="f-proveedor" placeholder="Nombre del proveedor"></div>
+    <div class="field-row">
+      <div class="field"><label>Fecha de pedido</label><input type="date" id="f-fpedido" value="${todayISO()}"></div>
+      <div class="field"><label>Llegada prevista</label><input type="date" id="f-fprevista"></div>
+    </div>
+    <div class="field"><label>Tarea a la que está destinado (opcional)</label>
+      <select id="f-tarea"><option value="">Ninguna</option>${tareas}</select></div>
+    <div class="field"><label>Registrado por (opcional)</label><input type="text" id="f-registrador" placeholder="Tu nombre"></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
+      <button class="btn-primary" data-action="guardar-material">Registrar</button>
+    </div>
+  `);
+}
+
+/* ---------- sheet: confirmar cierre semana ---------- */
+function abrirConfirmCierre(){
+  abrirSheet(`
+    <h3>Cerrar semana y replanificar</h3>
+    <p class="sheet-desc">
+      La <b>próxima semana</b> pasa a ser la <b>semana en curso</b>. Las tareas actuales de la semana en curso
+      quedan archivadas en el histórico. Los pedidos de material no se ven afectados: siguen su propio estado
+      hasta instalarse. Las tareas pausadas no se tocan.
+    </p>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
+      <button class="btn-primary" data-action="confirmar-cierre" style="background:var(--teal);">Confirmar cierre</button>
+    </div>
+  `);
+}
+
+/* ---------- sheet: pausar tarea ---------- */
+function abrirPausar(id){
+  abrirSheet(`
+    <h3>Pausar tarea</h3>
+    <p class="sheet-desc">La tarea sale de la semana en curso o próxima y queda aparte, sin contar en riesgos ni avisos, hasta que decidas reanudarla.</p>
+    <div class="field"><label>Motivo (opcional)</label>
+      <textarea id="f-motivo" rows="3" placeholder="Ej. esperando licencia, sin acceso a la zona, falta otra partida…"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
+      <button class="btn-primary" data-action="confirmar-pausar" data-id="${id}">Pausar tarea</button>
+    </div>
+  `);
+}
+
+/* ---------- sheet: reanudar tarea ---------- */
+function abrirReanudar(id){
+  abrirSheet(`
+    <h3>Reanudar tarea</h3>
+    <p class="sheet-desc">¿A qué semana la mandamos?</p>
+    <div class="sheet-actions">
+      <button class="btn-secondary" data-action="reanudar-tarea" data-id="${id}" data-semana="S">Semana en curso</button>
+      <button class="btn-primary" data-action="reanudar-tarea" data-id="${id}" data-semana="S+1">Próxima semana</button>
+    </div>
+  `);
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function renderAll(){
+  renderTopbar();
+  renderApp();
+  renderBottomNav();
+  renderStorageWarning();
+}
+
+function renderStorageWarning(){
+  // No hay advertencia de storage en versión Supabase
+  const el = document.getElementById('storage-warning');
+  if(el) el.innerHTML = '';
+}
+
+function renderTopbar(){
+  const obra = state.obras.find(o=>o.id===state.obraActualId);
+  document.getElementById('obra-pill-name').textContent = obra ? obra.nombre : 'Elegir obra';
+}
+
+function renderBottomNav(){
+  const { riesgos } = calcularRiesgos();
+  const tabs = [
+    { id:'plan', label:'Plan', icon:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>` },
+    { id:'materiales', label:'Materiales', icon:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 7.5L12 12l8-4.5M12 12v9" stroke="currentColor" stroke-width="1.6"/></svg>` },
+    { id:'resumen', label:'Resumen', icon:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M11 20V4M18 20v-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>` }
+  ];
+  document.getElementById('bottomnav').innerHTML = tabs.map(t => `
+    <button class="nav-btn ${state.tab===t.id?'active':''}" data-action="ir-tab" data-tab="${t.id}">
+      ${t.icon}
+      <span class="nav-label">${t.label}</span>
+      ${t.id==='resumen' && riesgos.length ? `<span class="nav-dot">${riesgos.length}</span>` : ''}
+    </button>
+  `).join('');
+}
+
+function renderApp(){
+  const app = document.getElementById('app');
+  if(state.cargando){ app.innerHTML = '<p style="text-align:center;padding:60px;color:var(--ink-muted);">Cargando…</p>'; return; }
+  if(!state.obraActualId){
+    app.innerHTML = `
+      <div class="empty-state">
+        <h3>Sin obras todavía</h3>
+        <p>Crea tu primera obra para empezar a planificar la semana y registrar pedidos de material.</p>
+        <button class="btn-primary" data-action="abrir-obras">Crear primera obra</button>
+      </div>`;
+    return;
+  }
+  if(state.tab==='plan') app.innerHTML = renderPlan();
+  else if(state.tab==='materiales') app.innerHTML = renderMateriales();
+  else app.innerHTML = renderResumen();
+}
+
+function renderTareaCard(t){
+  const riesgo = estadoRiesgoTarea(t, state.obraData.materiales);
+  const mat = t.materialId ? state.obraData.materiales.find(m=>m.id===t.materialId) : null;
+  let matTagClass = 'mt-pedido';
+  if(mat){ matTagClass = mat.estado==='pedido' ? 'mt-pedido' : mat.estado==='en_camino' ? 'mt-camino' : 'mt-ok'; }
+  return `
+    <div class="tarea-card ${riesgo||''}">
+      <button class="remove-x" data-action="eliminar-tarea" data-id="${t.id}" title="Eliminar">✕</button>
+      <div class="tarea-head">
+        <div class="tarea-nombre">${escapeHtml(t.nombre)}</div>
+        <div class="tarea-badges">
+          ${riesgo==='riesgo' ? '<span class="badge riesgo">En riesgo</span>' : ''}
+          ${riesgo==='aviso' ? '<span class="badge aviso">Aviso</span>' : ''}
+        </div>
+      </div>
+      <div class="tarea-meta">
+        <span>PERS · ${t.personas}</span>
+        <span>INICIO · ${fmtFecha(t.fechaInicio)}</span>
+      </div>
+      ${mat ? `<div class="material-tag ${matTagClass}" style="margin-top:9px;"><span class="dot"></span>${escapeHtml(mat.nombre)} · ${LABEL_MATERIAL[mat.estado]}</div>` : ''}
+      <div class="tarea-foot">
+        <select class="estado-select" data-action="cambiar-estado-tarea" data-id="${t.id}">
+          ${ESTADOS_TAREA.map(e=>`<option value="${e}" ${t.estado===e?'selected':''}>${LABEL_TAREA[e]}</option>`).join('')}
+        </select>
+        <button class="btn-pause" data-action="abrir-pausar" data-id="${t.id}">Pausar</button>
+      </div>
+    </div>`;
+}
+
+function renderTareaPausadaCard(t){
+  return `
+    <div class="tarea-card pausada">
+      <button class="remove-x" data-action="eliminar-tarea" data-id="${t.id}" title="Eliminar">✕</button>
+      <div class="tarea-nombre">${escapeHtml(t.nombre)}</div>
+      <div class="tarea-meta"><span>PAUSADA · ${fmtFecha(t.fechaPausa)}</span></div>
+      ${t.motivoPausa ? `<div class="riesgo-detalle">${escapeHtml(t.motivoPausa)}</div>` : ''}
+      <button class="btn-advance" data-action="abrir-reanudar" data-id="${t.id}">Reanudar tarea</button>
+    </div>`;
+}
+
+function renderPlan(){
+  const { tareas } = state.obraData;
+  const { riesgos } = calcularRiesgos();
+  const enCurso = tareas.filter(t=>t.semana==='S');
+  const proxima = tareas.filter(t=>t.semana==='S+1');
+  const pausadas = tareas.filter(t=>t.semana==='pausada');
+  const bannerRiesgo = riesgos.length ? `
+    <div class="risk-banner" data-action="ir-tab" data-tab="resumen">
+      ⚠ ${riesgos.length} tarea${riesgos.length>1?'s':''} en riesgo de bloqueo por material — ver resumen
+    </div>` : '';
+  return `
+    ${bannerRiesgo}
+    <div class="section-title"><span>Semana en curso</span></div>
+    <div class="card-list">
+      ${enCurso.map(renderTareaCard).join('') || '<p style="color:var(--ink-muted);font-size:13px;padding:4px 2px;">Sin tareas para esta semana.</p>'}
+      <button class="btn-add" data-action="nueva-tarea" data-semana="S">+ Añadir tarea a esta semana</button>
+    </div>
+    <div class="section-title"><span>Próxima semana</span></div>
+    <div class="card-list">
+      ${proxima.map(renderTareaCard).join('') || '<p style="color:var(--ink-muted);font-size:13px;padding:4px 2px;">Sin tareas planificadas todavía.</p>'}
+      <button class="btn-add" data-action="nueva-tarea" data-semana="S+1">+ Añadir tarea a la próxima semana</button>
+    </div>
+    <div class="section-title"><span>Tareas pausadas${pausadas.length ? ' ('+pausadas.length+')' : ''}</span></div>
+    <div class="card-list">
+      ${pausadas.map(renderTareaPausadaCard).join('') || '<p style="color:var(--ink-muted);font-size:13px;padding:4px 2px;">No hay tareas pausadas.</p>'}
+    </div>
+  `;
+}
+
+function renderMaterialCard(m){
+  const idx = ESTADOS_MATERIAL.indexOf(m.estado);
+  const tarea = m.tareaId ? state.obraData.tareas.find(t=>t.id===m.tareaId) : null;
+  const steps = ESTADOS_MATERIAL.map((e,i) => `
+    <div class="step ${i<idx?'done':''} ${i===idx?'current':''} ${i===idx&&idx===ESTADOS_MATERIAL.length-1?'done':''}"></div>
+    ${i<ESTADOS_MATERIAL.length-1 ? `<div class="step-line ${i<idx?'done':''}"></div>` : ''}
+  `).join('');
+  const accion = idx < ESTADOS_MATERIAL.length-1
+    ? `<button class="btn-advance" data-action="avanzar-material" data-id="${m.id}">Marcar como "${LABEL_MATERIAL[ESTADOS_MATERIAL[idx+1]]}"</button>`
+    : `<div class="done-pill">✓ Instalado</div>`;
+  return `
+    <div class="material-card">
+      <button class="remove-x" data-action="eliminar-material" data-id="${m.id}" title="Eliminar">✕</button>
+      <div class="material-nombre">${escapeHtml(m.nombre)}</div>
+      <div class="material-sub">${m.cantidad||''} ${escapeHtml(m.unidad||'')} · ${escapeHtml(m.proveedor||'sin proveedor')}</div>
+      <div class="material-sub">Pedido ${fmtFecha(m.fechaPedido)} → previsto ${fmtFecha(m.fechaPrevista)}</div>
+      ${tarea ? `<div class="material-link">Para: <b>${escapeHtml(tarea.nombre)}</b></div>` : ''}
+      <div class="stepper">${steps}</div>
+      <div class="step-labels"><span>Pedido</span><span>En camino</span><span>Llegado</span><span>Instalado</span></div>
+      ${accion}
+      ${idx>0 ? `<span class="undo-link" data-action="retroceder-material" data-id="${m.id}">deshacer último cambio</span>` : ''}
+    </div>`;
+}
+
+function renderMateriales(){
+  const mats = [...state.obraData.materiales].sort((a,b)=> (a.fechaPrevista||'').localeCompare(b.fechaPrevista||''));
+  return `
+    <div class="section-title"><span>Pedidos de material</span></div>
+    <div class="card-list">
+      ${mats.map(renderMaterialCard).join('') || '<p style="color:var(--ink-muted);font-size:13px;padding:4px 2px;">Aún no hay pedidos registrados.</p>'}
+      <button class="btn-add" data-action="nuevo-material">+ Registrar pedido</button>
+    </div>
+  `;
+}
+
+function renderResumen(){
+  const { riesgos, avisos } = calcularRiesgos();
+  const enCurso = state.obraData.tareas.filter(t=>t.semana==='S');
+  const pausadasCount = state.obraData.tareas.filter(t=>t.semana==='pausada').length;
+  const counts = { hecho:0, en_curso:0, pendiente:0, desviado:0 };
+  enCurso.forEach(t=> counts[t.estado] = (counts[t.estado]||0)+1);
+
+  const riesgoItem = (t) => {
+    const mat = state.obraData.materiales.find(m=>m.id===t.materialId);
+    const dias = diffDias(todayISO(), t.fechaInicio);
+    return `
+      <div class="tarea-card riesgo">
+        <div class="tarea-nombre">${escapeHtml(t.nombre)}</div>
+        <div class="riesgo-detalle">Debía empezar el ${fmtFecha(t.fechaInicio)} (hace ${Math.max(dias,0)} día${dias===1?'':'s'}) y "${escapeHtml(mat?mat.nombre:'')}" sigue en estado "${mat?LABEL_MATERIAL[mat.estado]:''}".</div>
+      </div>`;
+  };
+  const avisoItem = (t) => {
+    const mat = state.obraData.materiales.find(m=>m.id===t.materialId);
+    return `
+      <div class="tarea-card aviso">
+        <div class="tarea-nombre">${escapeHtml(t.nombre)}</div>
+        <div class="riesgo-detalle">Empieza el ${fmtFecha(t.fechaInicio)} y "${escapeHtml(mat?mat.nombre:'')}" todavía no ha salido del proveedor.</div>
+      </div>`;
+  };
+
+  return `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" style="color:var(--teal);">${counts.hecho}</div><div class="stat-label">Hechas</div></div>
+      <div class="stat-box"><div class="stat-num">${counts.en_curso}</div><div class="stat-label">En curso</div></div>
+      <div class="stat-box"><div class="stat-num">${counts.pendiente}</div><div class="stat-label">Pendientes</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--coral);">${counts.desviado}</div><div class="stat-label">Desviadas</div></div>
+    </div>
+
+    ${pausadasCount ? `<div class="pause-banner" data-action="ir-tab" data-tab="plan">⏸ ${pausadasCount} tarea${pausadasCount>1?'s':''} pausada${pausadasCount>1?'s':''} esperando para reanudarse — ver en Plan</div>` : ''}
+
+    <div class="section-title"><span>En riesgo ahora</span></div>
+    <div class="card-list">
+      ${riesgos.map(riesgoItem).join('') || '<p style="color:var(--ink-muted);font-size:13px;padding:4px 2px;">Ninguna tarea en riesgo por material.</p>'}
+    </div>
+
+    <div class="section-title"><span>Próximos avisos (3 días)</span></div>
+    <div class="card-list">
+      ${avisos.map(avisoItem).join('') || '<p style="color:var(--ink-muted);font-size:13px;padding:4px 2px;">Nada por vigilar en los próximos días.</p>'}
+    </div>
+
+    <button class="btn-cerrar-semana" data-action="confirmar-cierre-abrir">Cerrar semana y replanificar</button>
+    <p class="cerrar-hint">La próxima semana pasa a ser la semana en curso. Hazlo el viernes, o antes si hace falta replanificar.</p>
+  `;
+}
+
+/* =========================================================
+   EVENTOS (delegación)
+   ========================================================= */
+document.addEventListener('click', async (e)=>{
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const action = el.dataset.action;
+
+  if(action==='abrir-obras') abrirObras();
+  else if(action==='cerrar-sheet') cerrarSheet();
+  else if(action==='logout'){ if(confirm('¿Cerrar sesión?')) doLogout(); }
+  else if(action==='ir-tab'){ state.tab = el.dataset.tab; renderAll(); }
+  else if(action==='seleccionar-obra') seleccionarObra(el.dataset.id);
+  else if(action==='eliminar-obra'){ if(confirm('¿Eliminar esta obra y todos sus datos?')) eliminarObra(el.dataset.id); }
+  else if(action==='guardar-nueva-obra'){
+    const v = document.getElementById('input-nueva-obra').value.trim();
+    if(v) crearObra(v);
+  }
+  else if(action==='unirse-obra'){
+    const v = document.getElementById('input-join-obra').value.trim();
+    if(v) unirseAObra(v);
+  }
+  else if(action==='nueva-tarea') abrirNuevaTarea(el.dataset.semana);
+  else if(action==='guardar-tarea'){
+    const nombre = document.getElementById('f-nombre').value.trim();
+    if(!nombre){ mostrarToast('Pon un nombre para la tarea'); return; }
+    crearTarea({
+      nombre, semana: el.dataset.semana,
+      personas: document.getElementById('f-personas').value,
+      fechaInicio: document.getElementById('f-fecha').value,
+      materialId: document.getElementById('f-material').value
+    });
+  }
+  else if(action==='eliminar-tarea') eliminarTarea(el.dataset.id);
+  else if(action==='abrir-pausar') abrirPausar(el.dataset.id);
+  else if(action==='confirmar-pausar'){
+    const motivo = document.getElementById('f-motivo').value.trim();
+    pausarTarea(el.dataset.id, motivo);
+  }
+  else if(action==='abrir-reanudar') abrirReanudar(el.dataset.id);
+  else if(action==='reanudar-tarea') reanudarTarea(el.dataset.id, el.dataset.semana);
+  else if(action==='nuevo-material') abrirNuevoMaterial();
+  else if(action==='guardar-material'){
+    const nombre = document.getElementById('f-mnombre').value.trim();
+    if(!nombre){ mostrarToast('Pon el nombre del material'); return; }
+    crearMaterial({
+      nombre,
+      cantidad: document.getElementById('f-cantidad').value,
+      unidad: document.getElementById('f-unidad').value,
+      proveedor: document.getElementById('f-proveedor').value,
+      fechaPedido: document.getElementById('f-fpedido').value,
+      fechaPrevista: document.getElementById('f-fprevista').value,
+      tareaId: document.getElementById('f-tarea').value,
+      registradoPor: document.getElementById('f-registrador').value
+    });
+  }
+  else if(action==='avanzar-material') avanzarMaterial(el.dataset.id);
+  else if(action==='retroceder-material') retrocederMaterial(el.dataset.id);
+  else if(action==='eliminar-material'){ if(confirm('¿Eliminar este pedido?')) eliminarMaterial(el.dataset.id); }
+  else if(action==='confirmar-cierre-abrir') abrirConfirmCierre();
+  else if(action==='confirmar-cierre') cerrarSemana();
+});
+
+document.addEventListener('change', (e)=>{
+  const el = e.target.closest('[data-action="cambiar-estado-tarea"]');
+  if(el) actualizarEstadoTarea(el.dataset.id, el.value);
+});
+
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if(e.target.id==='overlay') cerrarSheet();
+});
+
+// La inicialización la dispara onAuthStateChange en cuanto detecta sesión activa
+</script>
+</body>
+</html>
