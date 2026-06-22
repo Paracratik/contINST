@@ -328,7 +328,6 @@
    CONFIGURACIÓN SUPABASE
    Reemplaza los dos valores de abajo con los de tu proyecto
    ========================================================= */
-
 const SUPABASE_URL  = 'https://fobgnzsdrjpsmsynxlct.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYmduenNkcmpwc21zeW54bGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTY5OTMsImV4cCI6MjA5NzQzMjk5M30.9bcR_58UOijBI_jqP-LQ1NWcDLHTizJh-3qEJ8oGt-E';
 
@@ -692,23 +691,25 @@ function cerrarSheet(){
 
 /* ---------- sheet: obras ---------- */
 function abrirObras(){
-  const esJefe = currentRol === 'jefe';
   const lista = state.obras.map(o => `
     <div class="obra-list-item ${o.id===state.obraActualId?'activa':''}" data-action="seleccionar-obra" data-id="${o.id}">
       <span>${escapeHtml(o.nombre)}</span>
       ${o.rol==='jefe' ? `<button class="btn-danger-text" data-action="eliminar-obra" data-id="${o.id}" onclick="event.stopPropagation()">eliminar</button>` : ''}
     </div>`).join('') || '<p style="color:var(--ink-muted);font-size:13px;">Aún no hay obras.</p>';
 
-  const crearSection = esJefe ? `
+  abrirSheet(`
+    <h3>Tus obras</h3>
+    <p class="sheet-desc">Cambia de obra, crea una nueva o únete a una existente. Sesión: <b>${escapeHtml(currentUser?.email||'')}</b> · <span style="cursor:pointer;text-decoration:underline;color:var(--ink-muted);" data-action="logout">Cerrar sesión</span></p>
+    ${lista}
     <div class="field" style="margin-top:16px;">
-      <label>Nueva obra (solo jefe)</label>
+      <label>Nueva obra (crearás esta obra como jefe)</label>
       <input type="text" id="input-nueva-obra" placeholder="Nombre de la obra">
     </div>
     <div class="sheet-actions">
       <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
       <button class="btn-primary" data-action="guardar-nueva-obra">Crear obra</button>
-    </div>` : `
-    <div class="field" style="margin-top:16px;">
+    </div>
+    <div class="field" style="margin-top:20px;">
       <label>Unirme a una obra (código que te da el jefe)</label>
       <input type="text" id="input-join-obra" placeholder="obra_xxxxxxxx">
     </div>
@@ -716,13 +717,7 @@ function abrirObras(){
       <button class="btn-secondary" data-action="cerrar-sheet">Cancelar</button>
       <button class="btn-primary" data-action="unirse-obra">Unirme</button>
     </div>
-    <p class="join-hint">El jefe de obra te comparte el ID de la obra (ej. <code>obra_ab12cd34</code>) y entras directo.</p>`;
-
-  abrirSheet(`
-    <h3>Tus obras</h3>
-    <p class="sheet-desc">Cambia de obra${esJefe ? ' o crea una nueva' : ''}. Sesión: <b>${escapeHtml(currentUser?.email||'')}</b> · <span style="cursor:pointer;text-decoration:underline;color:var(--ink-muted);" data-action="logout">Cerrar sesión</span></p>
-    ${lista}
-    ${crearSection}
+    <p class="join-hint">Cada obra tiene su propio rol: puedes ser jefe en las que creas y encargado en las que te unes.</p>
   `);
 }
 
