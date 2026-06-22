@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Avance de obra</title>
-<!-- Supabase JS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -323,7 +321,9 @@
 
 <div class="toast hidden" id="toast"></div>
 
-<script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
 /* =========================================================
    CONFIGURACIÓN SUPABASE
    Reemplaza los dos valores de abajo con los de tu proyecto
@@ -331,7 +331,8 @@
 const SUPABASE_URL  = 'https://fobgnzsdrjpsmsynxlct.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvYmduenNkcmpwc21zeW54bGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTY5OTMsImV4cCI6MjA5NzQzMjk5M30.9bcR_58UOijBI_jqP-LQ1NWcDLHTizJh-3qEJ8oGt-E';
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+window.sb = sb; // disponible también desde la consola para depurar
 
 /* =========================================================
    LOGIN / SESIÓN
@@ -1091,6 +1092,11 @@ document.getElementById('overlay').addEventListener('click', (e)=>{
 });
 
 // La inicialización la dispara onAuthStateChange en cuanto detecta sesión activa
+
+// Los módulos ES no exponen funciones globalmente; las funciones llamadas
+// desde atributos onclick= en el HTML deben registrarse aquí explícitamente.
+window.switchLoginTab = switchLoginTab;
+window.doLogin = doLogin;
 </script>
 </body>
 </html>
